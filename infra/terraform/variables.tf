@@ -3,6 +3,12 @@ variable "project_id" {
   type        = string
 }
 
+variable "gcp_organization_id" {
+  description = "The GCP Organization ID (Required for Security Command Center)"
+  type        = string
+  default     = "123456789012" # Mock org ID
+}
+
 variable "gcp_region" {
   description = "Primary GCP region"
   type        = string
@@ -34,4 +40,18 @@ variable "aws_secret_access_key" {
   type        = string
   sensitive   = true
   default     = "MOCK_AWS_SECRET_KEY"
+}
+
+# --- IAP Identity Variables ---
+variable "iap_oauth2_client_id" {
+  description = "OAuth2 Client ID for Identity-Aware Proxy (BeyondCorp)"
+  type        = string
+  default     = "MOCK_IAP_CLIENT_ID"
+}
+
+variable "iap_oauth2_client_secret" {
+  description = "OAuth2 Client Secret for Identity-Aware Proxy (BeyondCorp)"
+  type        = string
+  sensitive   = true
+  default     = "MOCK_IAP_CLIENT_SECRET"
 }

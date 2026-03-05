@@ -14,6 +14,10 @@ resource "google_container_cluster" "primary" {
     enable_private_endpoint = false
     master_ipv4_cidr_block  = "172.16.0.0/28"
   }
+
+  confidential_nodes {
+    enabled = true
+  }
 }
 
 # Node Pools
@@ -44,6 +48,34 @@ resource "google_container_node_pool" "app_pool" {
   node_config {
     machine_type = "n2-standard-8"
     spot         = true
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+  }
+}
+
+# Confidential Computing Node Pool (AMD SEV)
+# Runs the LangGraph Swarm (Memory IN-USE encryption)
+resource "google_container_node_pool" "confidential_swarm_pool" {
+  name       = "confidential-swarm-pool"
+  location   = var.gcp_region
+  cluster    = google_container_cluster.primary.name
+  
+  autoscaling {
+    total_min_node_count = 1
+    total_max_node_count = 5
+  }
+
+  node_config {
+    machine_type = "n2d-standard-8" # N2D required for AMD EPYC Confidential Computing
+    
+    # Force Pods to specifically request this hardened enclave
+    taint {
+      key    = "confidential-enclave"
+      value  = "true"
+      effect = "NO_SCHEDULE"
+    }
+
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform"
     ]

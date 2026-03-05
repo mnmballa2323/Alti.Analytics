@@ -6,6 +6,10 @@ resource "google_bigquery_dataset" "analytics_dw" {
   location                    = "US" # Multi-region US
   
   # Default table expiration set to 0 for unlimited
+  
+  default_encryption_configuration {
+    kms_key_name = google_kms_crypto_key.bq_cmek.id
+  }
 }
 
 # Example Table (Audit Log)

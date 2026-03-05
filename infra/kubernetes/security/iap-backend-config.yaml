@@ -1,0 +1,26 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: iap-backend-config
+  namespace: alti-frontend
+spec:
+  iap:
+    enabled: true
+    oauthclientCredentials:
+      secretName: iap-oauth-secret
+---
+# Example binding this BackendConfig to the Next.js Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: alti-web-portal-service
+  namespace: alti-frontend
+  annotations:
+    beta.cloud.google.com/backend-config: '{"default": "iap-backend-config"}'
+spec:
+  type: NodePort
+  selector:
+    app: web-portal
+  ports:
+  - port: 80
+    targetPort: 3000
