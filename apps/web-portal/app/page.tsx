@@ -1,10 +1,19 @@
+"use client";
+
+import { useState } from 'react';
+import { useUIState, useActions } from 'ai/rsc';
+import { AI } from './actions';
 import MarketTicker from '@/components/MarketTicker';
-import TacticalPitch from '@/components/TacticalPitch';
 import LookerEmbed from '@/components/LookerEmbed';
 
 export default function Home() {
     // Scaffolded state for the Universal Actuation UI Hook
     const hasActiveEdgeAlert = true;
+
+    // AI SDK State
+    const [messages, setMessages] = useUIState<typeof AI>();
+    const { submitMessage } = useActions<typeof AI>();
+    const [inputValue, setInputValue] = useState('');
 
     return (
         <main className="min-h-screen p-12 bg-black text-slate-200 selection:bg-fuchsia-500 selection:text-white relative">
@@ -76,50 +85,75 @@ export default function Home() {
                 <div className="lg:col-span-2">
                     <section className="space-y-4 h-full flex flex-col">
                         <h3 className="text-lg font-bold text-slate-300 uppercase tracking-widest border-l-4 border-fuchsia-500 pl-3">
-                            Autonomous Analyst (Gemini)
+                            Sentient UI (Generative Context)
                         </h3>
 
-                        <div className="flex-1 min-h-[400px] border border-slate-700/50 bg-slate-900 rounded-xl overflow-hidden flex flex-col relative">
-                            {/* Fake Chat Window */}
-                            <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                        <div className="flex-1 min-h-[500px] border border-slate-700/50 bg-slate-900 rounded-xl overflow-hidden flex flex-col relative w-full pb-4">
+                            {/* Chat Window / Component Render Space */}
+                            <div className="flex-1 p-6 space-y-6 overflow-y-auto mb-16">
                                 <div className="flex justify-start">
-                                    <div className="bg-slate-800 p-4 rounded-xl rounded-tl-none max-w-[80%] border border-slate-700">
+                                    <div className="bg-slate-800 p-4 rounded-xl rounded-tl-none border border-slate-700 w-full max-w-2xl">
                                         <p className="text-slate-300">
-                                            Hello. I am your Gemini-powered Autonomous Agent. I maintain direct SQL access to our live Data Warehouse in BigQuery. How can I analyze our telemetry streams today?
+                                            I am the upgraded Sentient Agent. I can now manifest bespoke UI components (Supply Chain Maps, Arbitrage Displays) on-demand based on the telemetry I analyze. Throw an anomaly scenario at me.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end">
-                                    <div className="bg-fuchsia-600/20 text-fuchsia-100 p-4 rounded-xl rounded-tr-none max-w-[80%] border border-fuchsia-500/30">
-                                        <p>What is the current trend for BTC over the last 15 minutes?</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-start">
-                                    <div className="bg-slate-800 p-4 rounded-xl rounded-tl-none max-w-[80%] border border-slate-700 space-y-3">
-                                        <div className="text-xs font-mono text-fuchsia-400 border border-fuchsia-400/20 bg-fuchsia-400/5 p-2 rounded">
-                                            🔧 Tool Call: `execute_bigquery_sql`<br />
-                                            SELECT avg(price) FROM `alti_analytics_prod.live_market_data` WHERE symbol = 'BTCUSDT' AND timestamp {'>'}= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE)
+                                {messages.map((message) => (
+                                    <div key={message.id} className="flex justify-start w-full">
+                                        <div className="w-full">
+                                            {message.display}
                                         </div>
-                                        <p className="text-slate-300">
-                                            Based on my BigQuery execution over our live Dataflow sink, BTC has maintained an average price of $64,510.20 over the last 15 minutes with exceptionally high volume accumulation indicating strong buy-side pressure. I recommend increasing the delta on our systematic holding strategy.
-                                        </p>
                                     </div>
-                                </div>
+                                ))}
                             </div>
 
                             {/* Input Box */}
-                            <div className="p-4 bg-slate-800 border-t border-slate-700 flex space-x-4">
-                                <input
-                                    type="text"
-                                    disabled
-                                    placeholder="Request analysis or SQL execution..."
-                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-fuchsia-500"
-                                />
-                                <button disabled className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg font-bold transition-colors">
-                                    Send
-                                </button>
+                            <div className="absolute bottom-0 left-0 w-full p-4 bg-slate-800 border-t border-slate-700 flex space-x-4">
+                                <form
+                                    className="flex w-full space-x-4"
+                                    onSubmit={async (e) => {
+                                        e.preventDefault();
+
+                                        // Add user message to UI state
+                                        setMessages((currentMessages) => [
+                                            ...currentMessages,
+                                            {
+                                                id: Date.now(),
+                                                display: (
+                                                    <div className="flex justify-end w-full mb-4">
+                                                        <div className="bg-fuchsia-600/20 text-fuchsia-100 p-4 rounded-xl rounded-tr-none border border-fuchsia-500/30">
+                                                            {inputValue}
+                                                        </div>
+                                                    </div>
+                                                ),
+                                            },
+                                        ]);
+
+                                        // Submit and get response component from server
+                                        const responseMessage = await submitMessage(inputValue);
+                                        setMessages((currentMessages) => [
+                                            ...currentMessages,
+                                            responseMessage,
+                                        ]);
+
+                                        setInputValue('');
+                                    }}
+                                >
+                                    <input
+                                        type="text"
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        placeholder="Describe a logistics or trading anomaly to trigger generative UI..."
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-slate-200 focus:outline-none focus:ring-1 focus:ring-fuchsia-500"
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="px-6 py-3 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-lg font-bold transition-colors"
+                                    >
+                                        Execute
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </section>
