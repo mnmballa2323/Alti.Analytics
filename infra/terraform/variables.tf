@@ -20,3 +20,18 @@ variable "vpc_cidr" {
   type        = string
   default     = "10.0.0.0/16"
 }
+
+# Cross-Cloud Import Variables (for BigQuery DTS)
+variable "aws_access_key_id" {
+  description = "AWS IAM Access Key with read permissions to the partner S3 bucket"
+  type        = string
+  sensitive   = true
+  default     = "MOCK_AWS_ACCESS_KEY"
+}
+
+variable "aws_secret_access_key" {
+  description = "AWS IAM Secret Key with read permissions to the partner S3 bucket"
+  type        = string
+  sensitive   = true
+  default     = "MOCK_AWS_SECRET_KEY"
+}

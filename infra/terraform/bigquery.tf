@@ -39,5 +39,26 @@ resource "google_bigquery_table" "audit_log" {
     "description": "Action taken"
   }
 ]
+]
 EOF
+}
+
+# BigQuery Data Transfer Service (DTS) - AWS S3 to BigQuery
+# Automatically syncs historical CSV exports from partner S3 buckets
+resource "google_bigquery_data_transfer_config" "s3_historical_import" {
+  display_name           = "historical-s3-game-logs-import"
+  location               = "US"
+  data_source_id         = "amazon_s3"
+  schedule               = "every 24 hours"
+  destination_dataset_id = google_bigquery_dataset.analytics_dw.dataset_id
+
+  params = {
+    destination_table_name_template = "legacy_game_logs_{run_date}"
+    data_path                       = "s3://partner-sports-historical-data/archives/*.csv"
+    access_key_id                   = var.aws_access_key_id
+    secret_access_key              = var.aws_secret_access_key
+    file_format                     = "CSV"
+    max_bad_records                 = "100"
+    ignore_unknown_values           = "true"
+  }
 }
