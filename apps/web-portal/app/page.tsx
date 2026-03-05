@@ -6,8 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AI } from './actions';
 import MarketTicker from '@/components/MarketTicker';
 import LookerEmbed from '@/components/LookerEmbed';
-import { GlassPanel } from '@/components/ux/GlassPanel';
-import { Activity, Cpu, Hexagon } from 'lucide-react';
+import GlassPanel from '@/components/ux/GlassPanel'; // Updated import
+import DigitalTwinGlobe from '@/components/3d-globe/DigitalTwinGlobe'; // New import
+import { Activity, Cpu, Hexagon, Bot, User, Crosshair, Map, ShieldAlert, Target } from 'lucide-react'; // Updated import
+import { clsx, type ClassValue } from 'clsx'; // New import
+import { twMerge } from 'tailwind-merge'; // New import
+
+// --- Utility for Tailwind classes ---
+function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
 
 export default function Home() {
     // Scaffolded state for the Universal Actuation UI Hook
@@ -91,14 +99,28 @@ export default function Home() {
 
             {/* Grid Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
-                {/* Left Column: Data Streams */}
+                {/* Left Column: Epic 16 3D Digital Twin & Data Streams */}
                 <div className="lg:col-span-1 space-y-8">
+                    {/* EPIC 16: Supply Chain Digital Twin 3D View */}
+                    <GlassPanel variant="subtle" className="h-[450px] p-0 overflow-hidden flex flex-col justify-start">
+                        <div className="p-4 border-b border-white/5 bg-black/40 flex items-center justify-between z-10">
+                            <div className="flex items-center gap-2">
+                                <Map className="w-5 h-5 text-emerald-400" />
+                                <h2 className="text-white font-medium text-lg">Supply Chain Omniverse</h2>
+                            </div>
+                            <div className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-xs rounded border border-emerald-500/20">
+                                LIVE
+                            </div>
+                        </div>
+                        <div className="flex-1 w-full h-full relative">
+                            <DigitalTwinGlobe />
+                        </div>
+                    </GlassPanel>
+
                     <GlassPanel variant="subtle" className="p-6 space-y-6">
                         <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                            <Cpu size={18} className="text-emerald-500" /> Ingestion Streams
+                            <Activity size={18} className="text-emerald-500" /> Ingestion Streams
                         </h3>
-                        <MarketTicker />
-
                         {/* Context/Placeholder for Pub/Sub Pipeline Stats */}
                         <div className="p-4 bg-slate-950/80 border border-white/5 rounded-xl space-y-3 font-mono text-xs">
                             <div className="flex justify-between items-center text-slate-400">
@@ -110,10 +132,6 @@ export default function Home() {
                                 <span className="text-white">2,401 msg/s</span>
                             </div>
                         </div>
-                    </GlassPanel>
-
-                    <GlassPanel className="p-2 border-t-4 border-t-blue-500/50">
-                        <LookerEmbed />
                     </GlassPanel>
                 </div>
 
@@ -215,8 +233,8 @@ export default function Home() {
                             </div>
                         </div>
                     </GlassPanel>
-                </div>
-            </div>
-        </main>
+                </div >
+            </div >
+        </main >
     );
 }
