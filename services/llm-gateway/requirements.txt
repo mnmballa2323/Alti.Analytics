@@ -7,3 +7,4 @@ google-cloud-aiplatform==1.38.0
 langgraph==0.0.26
 langchain-google-vertexai==0.0.5
 langchain-core==0.1.28
+langgraph-checkpoint-postgres==1.0.0

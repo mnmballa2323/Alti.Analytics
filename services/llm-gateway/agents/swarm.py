@@ -74,17 +74,41 @@ workflow.add_conditional_edges(
 workflow.add_edge("data_engineer", "supervisor")
 workflow.add_edge("vision_analyst", "supervisor")
 
-app_swarm = workflow.compile()
+import os
+from langgraph.checkpoint.postgres import PostgresSaver
+
+# AlloyDB Connection URI from environment or Terraform output
+# e.g. postgresql://swarm_admin:password@10.0.0.4:5432/postgres
+DB_URI = os.getenv("ALLOYDB_URI", "postgresql://swarm_admin:mock_pass@127.0.0.1:5432/postgres")
+
+# Initialize the Postgres Checkpointer for Persistent Swarm Memory
+# In a true deployment, this block is handled within an async context manager
+# but for scaffolding we establish the synchronous connection pool.
+import psycopg
+connection_pool = psycopg.Connection.connect(DB_URI, autocommit=True)
+memory_saver = PostgresSaver(connection_pool)
+# Note: memory_saver.setup() must be run once to create the checkpoints table.
+
+app_swarm = workflow.compile(checkpointer=memory_saver)
 
 # Example Invocation Strategy for FastAPI endpoint
-def execute_tactical_swarm(query: str, has_image: bool = False):
+def execute_tactical_swarm(query: str, tenant_id: str, session_id: str, has_image: bool = False):
+    """
+    Executes the swarm using persistent memory. 
+    The thread_id ensures the agents remember past queries from this specific session/tenant.
+    """
     initial_state = {
         "messages": [HumanMessage(content=query)],
-        "tactical_context": "Opponent: Team X",
+        "tactical_context": f"Opponent: Team X (Tenant: {tenant_id})",
         "data_analysis_complete": False,
         "vision_analysis_complete": not has_image # Skip vision if no image provided
     }
     
-    # In reality, you'd iterate app_swarm.stream(initial_state) to yield progress to the frontend UI
-    final_state = app_swarm.invoke(initial_state)
+    # The config dict tells LangGraph which DB thread to load state from
+    config = {"configurable": {"thread_id": f"{tenant_id}_{session_id}"}}
+    
+    # The swarm will load past messages from AlloyDB, append the new query, and route appropriately.
+    final_state = app_swarm.invoke(initial_state, config=config)
+    
     return final_state["messages"][-1].content
+
