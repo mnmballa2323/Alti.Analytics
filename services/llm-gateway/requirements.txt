@@ -9,3 +9,7 @@ langchain-google-vertexai==0.0.5
 langchain-core==0.1.28
 langgraph-checkpoint-postgres==1.0.0
 redis>=5.0.0
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-exporter-gcp-trace
+opentelemetry-instrumentation-fastapi

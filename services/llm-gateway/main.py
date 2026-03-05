@@ -7,8 +7,12 @@ from vertexai.generative_models import GenerativeModel, Part
 import redis
 import json
 import hashlib
+from tracing import setup_cloud_trace
 
 app = FastAPI(title="Alti.Analytics Vertex/Gemini Gateway", version="1.1.0")
+
+# Instrument End-to-End Tracing via Google Cloud Trace
+setup_cloud_trace(app)
 
 class ChatRequest(BaseModel):
     query: str
