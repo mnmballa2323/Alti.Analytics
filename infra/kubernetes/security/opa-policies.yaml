@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-default-system-main
+  namespace: opa
+data:
+  main.rego: |
+    package system.main
+
+    default main = false
+
+    # Baseline Zero-Trust policies for Alti.Analytics services
+    main {
+      input.request.method == "GET"
+      input.request.path == "/health"
+    }
+
+    # Restrict administrative APIs to admin roles
+    main {
+      input.request.path = ["v1", "admin"]
+      "Admin" == input.user.role
+    }
