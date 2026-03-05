@@ -1,4 +1,5 @@
 import MarketTicker from '@/components/MarketTicker';
+import TacticalPitch from '@/components/TacticalPitch';
 
 export default function Home() {
     return (
@@ -74,7 +75,7 @@ export default function Home() {
                                     <div className="bg-slate-800 p-4 rounded-xl rounded-tl-none max-w-[80%] border border-slate-700 space-y-3">
                                         <div className="text-xs font-mono text-fuchsia-400 border border-fuchsia-400/20 bg-fuchsia-400/5 p-2 rounded">
                                             🔧 Tool Call: `execute_bigquery_sql`<br />
-                      SELECT avg(price) FROM `alti_analytics_prod.live_market_data` WHERE symbol = 'BTCUSDT' AND timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE)
+                                            SELECT avg(price) FROM `alti_analytics_prod.live_market_data` WHERE symbol = 'BTCUSDT' AND timestamp {'>'}= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE)
                                         </div>
                                         <p className="text-slate-300">
                                             Based on my BigQuery execution over our live Dataflow sink, BTC has maintained an average price of $64,510.20 over the last 15 minutes with exceptionally high volume accumulation indicating strong buy-side pressure. I recommend increasing the delta on our systematic holding strategy.
