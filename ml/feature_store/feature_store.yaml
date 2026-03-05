@@ -1,0 +1,14 @@
+project: alti_analytics_fs
+provider: gcp
+
+offline_store:
+  type: bigquery
+  dataset: alti_analytics_prod
+
+online_store:
+  type: redis
+  connection_string: "alti-analytics-dev-redis.local:6379"
+
+registry:
+  registry_type: sql
+  path: postgresql://admin:${DB_PASSWORD}@prod-pg-server:5432/feast_registry

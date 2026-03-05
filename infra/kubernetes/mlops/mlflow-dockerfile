@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+WORKDIR /mlflow/
+
+RUN pip install --no-cache-dir mlflow boto3 psycopg2-binary google-cloud-storage
+
+EXPOSE 5000
+
+ENV BACKEND_STORE_URI="postgresql://admin:${DB_PASSWORD}@prod-pg-server:5432/mlflow"
+ENV DEFAULT_ARTIFACT_ROOT="gs://alti-analytics-dev-mlflow-artifacts/"
+
+CMD mlflow server \
+    --backend-store-uri ${BACKEND_STORE_URI} \
+    --default-artifact-root ${DEFAULT_ARTIFACT_ROOT} \
+    --host 0.0.0.0 \
+    --port 5000

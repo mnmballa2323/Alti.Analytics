@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triton-inference-server
+  namespace: ml-serving
+  labels:
+    app: triton-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triton-server
+  template:
+    metadata:
+      labels:
+        app: triton-server
+    spec:
+      containers:
+        - name: triton-server
+          image: nvcr.io/nvidia/tritonserver:24.01-py3
+          command: ["tritonserver", "--model-repository=gs://alti-analytics-dev-mlflow-artifacts/triton-models"]
+          resources:
+            limits:
+              # nvidia.com/gpu: 1 # Uncomment to activate GPU usage
+              memory: 8Gi
+              cpu: "4"
+          ports:
+            - containerPort: 8000
+              name: http
+            - containerPort: 8001
+              name: grpc
+            - containerPort: 8002
+              name: metrics
