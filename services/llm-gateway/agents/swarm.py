@@ -12,8 +12,31 @@ class AgentState(TypedDict):
     vision_analysis_complete: bool
     data_analysis_complete: bool
 
-# 2. Define the Swarm Nodes (Agents)
+from langchain_core.tools import tool
+
+# 2. Define the Swarm Nodes & Tools
 llm = ChatVertexAI(model="gemini-1.5-pro", project="alti-analytics-prod", location="us-central1")
+
+@tool
+def execute_universal_actuation(action_type: str, target_entity: str, parameters: dict, justification: str) -> str:
+    """
+    Executes a real-world autonomous action via the Actuation Engine API.
+    Use this ONLY when a critical anomaly is detected that requires immediate intervention 
+    (e.g., placing a trade, sending an emergency warning).
+    """
+    import requests
+    try:
+        # In a real cluster, this hits the internal actuation-engine Kubernetes service
+        # response = requests.post("http://actuation-engine/v1/execute_action", json={...})
+        
+        # Scaffolded response
+        receipt = "ACT_999888777"
+        return f"SUCCESS. Actuation {action_type} on {target_entity} was executed. Receipt: {receipt}"
+    except Exception as e:
+        return f"FAILED to execute actuation: {e}"
+
+# Bind the tool to the LLM so the Supervisor can invoke it
+llm_with_tools = llm.bind_tools([execute_universal_actuation])
 
 def supervisor_node(state: AgentState):
     """The Head Coach. Routes the query based on what is missing."""
@@ -25,9 +48,9 @@ def supervisor_node(state: AgentState):
     elif not state.get("vision_analysis_complete") and "image" in last_message.content.lower():
         return {"messages": [AIMessage(content="Routing to Vision Analyst to review tactical game film.")]}
     else:
-        # Synthesis
+        # Synthesis and Potential Actuation
         prompt = f"Synthesize a final tactical plan based on the data and vision context. Previous messages: {state['messages']}"
-        response = llm.invoke(prompt)
+        response = llm_with_tools.invoke(prompt)
         return {"messages": [response]}
 
 def data_engineer_node(state: AgentState):

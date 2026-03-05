@@ -3,8 +3,28 @@ import TacticalPitch from '@/components/TacticalPitch';
 import LookerEmbed from '@/components/LookerEmbed';
 
 export default function Home() {
+    // Scaffolded state for the Universal Actuation UI Hook
+    const hasActiveEdgeAlert = true;
+
     return (
-        <main className="min-h-screen p-12 bg-black text-slate-200 selection:bg-fuchsia-500 selection:text-white">
+        <main className="min-h-screen p-12 bg-black text-slate-200 selection:bg-fuchsia-500 selection:text-white relative">
+
+            {/* AUTONOMOUS ACTUATION ALERT BANNER */}
+            {hasActiveEdgeAlert && (
+                <div className="absolute top-0 left-0 w-full bg-red-600/90 text-white px-6 py-3 flex items-center justify-between border-b-4 border-red-800 animate-pulse shadow-2xl z-50">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">⚠️</span>
+                        <div>
+                            <h3 className="font-bold uppercase tracking-widest text-sm">Autonomous Actuation Executed</h3>
+                            <p className="text-xs opacity-90">Swarm resolved an anomaly via Trade Execution [Receipt: ACT_999888777]</p>
+                        </div>
+                    </div>
+                    <button className="text-xs bg-red-800 hover:bg-red-900 px-4 py-2 rounded uppercase font-bold tracking-wider transition-colors border border-red-500">
+                        Review Action
+                    </button>
+                </div>
+            )}
+
             {/* Header */}
             <header className="mb-16 border-b border-white/10 pb-8 flex justify-between items-end">
                 <div>
