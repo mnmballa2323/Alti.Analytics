@@ -1,0 +1,6 @@
+[submodule "Alti.Analytics.Frontend"]
+	path = Alti.Analytics.Frontend
+	url = https://github.com/alticompany/Alti.Analytics.Frontend.git
+[submodule "Alti.Analytics.Backend"]
+	path = Alti.Analytics.Backend
+	url = https://github.com/alticompany/Alti.Analytics.Backend.git
