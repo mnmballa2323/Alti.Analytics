@@ -1,0 +1,29 @@
+# infra/robotics/isaac_sim_config.yaml
+# Epic 20: Biomimetic Actuation
+# NVIDIA Isaac Sim configuration used by the Alti.Analytics Swarm to 
+# mathematically validate a drone's flight path inside a digital twin
+# BEFORE executing the kinetic ROS 2 commands in the real world.
+
+simulation_environment:
+  physics_engine: "NVIDIA_PhysX_5"
+  gravity: [0.0, 0.0, -9.81] # Earth Standard Gravity
+  time_steps_per_second: 120    # High-fidelity collision simulation
+  
+assets:
+  drone_model: "usd://ov-isaac-models/Robots/Quadcopter/drone.usd"
+  warehouse_twin: "gs://alti-analytics-twins/facilities/mountain_view_warehouse_v3.usd"
+
+ros2_bridge:
+  enabled: true
+  domain_id: 42
+  node_name: "alti_cloud_isaac_validator"
+  qos_profile: "sensor_data"
+
+autonomous_validation_params:
+  collision_tolerance_meters: 1.5
+  max_velocity_ms: 12.0
+  battery_drain_model: "LIPO_NONLINEAR"
+  
+  # The LangGraph Swarm will invoke this pipeline, passing in the target coordinates.
+  # If Isaac Sim returns a collision probability > 0.01%, the physical dispatch is aborted.
+  safety_threshold_confidence: 0.9999

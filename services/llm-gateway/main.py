@@ -8,8 +8,12 @@ import redis
 import json
 import hashlib
 from tracing import setup_cloud_trace
+from agents.agi.agi_verifier import AGIVerifier
 
 app = FastAPI(title="Alti.Analytics Vertex/Gemini Gateway", version="1.1.0")
+
+# Phase 6: Initialize Neural-Symbolic AGI Verifier
+agi_supervisor = AGIVerifier()
 
 # Instrument End-to-End Tracing via Google Cloud Trace
 setup_cloud_trace(app)
