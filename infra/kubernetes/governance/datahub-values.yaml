@@ -1,0 +1,26 @@
+# Values for DataHub Helm Chart tailored for Alti.Analytics on GCP
+global:
+  datahq:
+    enabled: true
+  neo4j:
+    enabled: false
+  elasticsearch:
+    host: "elasticsearch-master"
+    port: "9200"
+  kafka:
+    bootstrap:
+      server: "kafka-cluster:9092"
+      
+prerequisites:
+  elasticsearch:
+    enabled: true
+  kafka:
+    enabled: true
+
+# Placeholder configuration for metadata ingestion from BigQuery and Feast
+datahub-frontend:
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - datahub.dev.alti.analytics

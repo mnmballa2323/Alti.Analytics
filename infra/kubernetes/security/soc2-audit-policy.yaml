@@ -1,0 +1,16 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: ns-must-have-sec-labels
+spec:
+  # SOC 2 CC6.1 Logical Access Security
+  # All namespaces must be tagged with data classification and owner
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Namespace"]
+  parameters:
+    labels:
+      - key: "data-classification"
+        allowedRegex: "^(public|internal|confidential|restricted)$"
+      - key: "owner-team"
