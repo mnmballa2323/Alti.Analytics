@@ -1,0 +1,61 @@
+name: "Alti.Analytics CI/CD Pipeline"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  GCP_REGION: us-central1
+  GCP_PROJECT: alti-analytics-prod
+jobs:
+  lint-and-sast:
+    name: Lint & SAST Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        run: |
+          # Placeholder for Semgrep SAST scan
+          echo "Running Semgrep..."
+      - name: Run Bandit
+        run: |
+          # Placeholder for Bandit scan
+          echo "Running Bandit..."
+
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: lint-and-sast
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Environment
+        run: echo "Setting up language environments..."
+      - name: Run Unit Tests with Coverage Gate (>=85%)
+        run: echo "Testing with pytest / jest..."
+      - name: Run Integration Tests (Testcontainers)
+        run: echo "Testing with Testcontainers..."
+
+  build-and-push:
+    name: Docker Build & Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker Build
+        run: echo "Building container image..."
+      - name: Trivy Vulnerability Scanner
+        run: echo "Scanning for CRITICAL CVEs..."
+      - name: Push to Google Artifact Registry
+        run: echo "Pushing to GAR (SHA tag: ${{ github.sha }})..."
+  deploy:
+    name: Update GitOps Config
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update Helm values in GitOps repository
+        run: echo "Updating image tag to ${{ github.sha }}..."

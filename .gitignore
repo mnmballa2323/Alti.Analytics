@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+.terraform/
+*.tfstate
+*.tfstate.backup
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
