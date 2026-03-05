@@ -1,0 +1,24 @@
+# Dataplex Taxonomy and Policy Tags for Automated Data Masking in BigQuery
+# Used in conjunction with Terraform or `gcloud data-catalog taxonomies import`
+
+taxonomies:
+  - display_name: "Sports Biometrics & PII"
+    description: "Taxonomy governing sensitive medical and positional telemetry across Alti.Analytics"
+    activated_policy_types:
+      - FINE_GRAINED_ACCESS_CONTROL
+    policy_tags:
+      - display_name: "High Sensitivity (Medical)"
+        description: "Heart rates, injury risk scores, and ACWR calculations."
+        # IAM binding config (Conceptual): 
+        # Only principals with 'roles/datacatalog.categoryFineGrainedReader' can view raw data.
+        # Others see NULL or HASHED values.
+      
+      - display_name: "Medium Sensitivity (Location)"
+        description: "Real-time X/Y pitch coordinates."
+        
+# BigQuery Schema Application Example (Conceptual):
+# ALTER TABLE `alti-analytics-prod.alti_analytics_prod.live_market_data`
+# ALTER COLUMN heart_rate_bpm SET OPTIONS(
+#   rounding_mode="ROUND_HALF_EVEN",
+#   policy_tags=["projects/alti-analytics-prod/locations/us-central1/taxonomies/[TAXONOMY_ID]/policyTags/[TAG_ID]"]
+# );

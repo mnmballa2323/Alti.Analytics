@@ -1,5 +1,6 @@
 import MarketTicker from '@/components/MarketTicker';
 import TacticalPitch from '@/components/TacticalPitch';
+import LookerEmbed from '@/components/LookerEmbed';
 
 export default function Home() {
     return (
@@ -44,6 +45,10 @@ export default function Home() {
                                 <span>2,401 msg/s</span>
                             </div>
                         </div>
+                    </section>
+
+                    <section className="space-y-4 pt-4 border-t border-slate-800">
+                        <LookerEmbed />
                     </section>
                 </div>
 
