@@ -1,0 +1,25 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: auth-service
+    url: http://auth-service:8000
+    routes:
+      - name: auth-route
+        paths:
+          - /v1/auth
+        strip_path: true
+  - name: user-service
+    url: http://user-service:8000
+    routes:
+      - name: user-route
+        paths:
+          - /v1/users
+        strip_path: true
+
+plugins:
+  - name: rate-limiting
+    config:
+      second: 50
+      hour: 10000
+      policy: local
