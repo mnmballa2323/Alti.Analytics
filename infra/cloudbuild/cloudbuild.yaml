@@ -1,0 +1,192 @@
+# infra/cloudbuild/cloudbuild.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Epic 78: Cloud Build CI/CD Pipeline — Mono-repo Smart Build
+#
+# Triggered: on push to main or a PR targeting main
+# Strategy:  changed-path detection → only rebuild affected services
+# Stages:
+#   1. lint          - ruff / eslint per service
+#   2. unit-test     - pytest / jest with coverage gates
+#   3. integration   - real BigQuery/Spanner calls in staging project
+#   4. build         - Docker build + push to Artifact Registry
+#   5. deploy-canary - Cloud Run 5% canary revision
+#   6. load-test     - k6 against canary, validate SLOs
+#   7. promote       - shift 100% traffic if SLO met, else rollback
+#
+# Usage: gcloud builds submit --config infra/cloudbuild/cloudbuild.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+steps:
+
+# ── Stage 0: Detect which services changed ────────────────────────────────────
+- name: 'gcr.io/cloud-builders/git'
+  id: 'detect-changes'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      echo "=== Alti.Analytics Smart Build ===" && \
+      CHANGED=$(git diff --name-only HEAD~1 HEAD | \
+        grep '^services/' | \
+        awk -F'/' '{print $2}' | sort -u) && \
+      echo "Changed services: $CHANGED" && \
+      echo "$CHANGED" > /workspace/changed_services.txt
+
+# ── Stage 1: Lint ─────────────────────────────────────────────────────────────
+- name: 'python:3.12-slim'
+  id: 'lint'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      pip install --quiet ruff && \
+      for svc in $(cat /workspace/changed_services.txt); do
+        echo "Linting services/$svc" && \
+        ruff check services/$svc/ --select E,F,W --max-line-length 120 || exit 1
+      done
+  waitFor: ['detect-changes']
+
+# ── Stage 2: Unit Tests ───────────────────────────────────────────────────────
+- name: 'python:3.12-slim'
+  id: 'unit-test'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      pip install --quiet pytest pytest-cov pytest-asyncio && \
+      for svc in $(cat /workspace/changed_services.txt); do
+        if [ -d "services/$svc/tests" ]; then
+          echo "Testing services/$svc" && \
+          python -m pytest services/$svc/tests/ \
+            --cov=services/$svc \
+            --cov-fail-under=80 \
+            --tb=short \
+            -q || exit 1
+        else
+          echo "No tests found for $svc — skipping"
+        fi
+      done
+  waitFor: ['lint']
+
+# ── Stage 3: Integration Tests ────────────────────────────────────────────────
+- name: 'python:3.12-slim'
+  id: 'integration-test'
+  entrypoint: 'bash'
+  env:
+    - 'PROJECT_ID=$PROJECT_ID'
+    - 'ENVIRONMENT=staging'
+    - 'BQ_DATASET=alti_analytics_staging'
+  args:
+    - '-c'
+    - |
+      pip install --quiet pytest pytest-asyncio google-cloud-bigquery google-cloud-spanner && \
+      for svc in $(cat /workspace/changed_services.txt); do
+        if [ -f "services/$svc/tests/integration_test.py" ]; then
+          echo "Integration test: services/$svc" && \
+          python -m pytest services/$svc/tests/integration_test.py \
+            --tb=short -q || exit 1
+        fi
+      done
+  waitFor: ['unit-test']
+
+# ── Stage 4: Docker Build & Push ─────────────────────────────────────────────
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-push'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      REGISTRY="${_REGION}-docker.pkg.dev/$PROJECT_ID/alti-staging" && \
+      for svc in $(cat /workspace/changed_services.txt); do
+        echo "Building $svc" && \
+        docker build \
+          -t "$REGISTRY/alti-$svc:$SHORT_SHA" \
+          -t "$REGISTRY/alti-$svc:latest" \
+          -f services/$svc/Dockerfile \
+          services/$svc/ && \
+        docker push "$REGISTRY/alti-$svc:$SHORT_SHA" && \
+        docker push "$REGISTRY/alti-$svc:latest" && \
+        echo "$svc" >> /workspace/built_services.txt || exit 1
+      done
+  waitFor: ['integration-test']
+
+# ── Stage 5: Deploy Canary (5% traffic) ──────────────────────────────────────
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'deploy-canary'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      REGISTRY="${_REGION}-docker.pkg.dev/$PROJECT_ID/alti-staging" && \
+      for svc in $(cat /workspace/built_services.txt 2>/dev/null || cat /workspace/changed_services.txt); do
+        echo "Canary deploy: alti-staging-$svc at 5% traffic" && \
+        gcloud run deploy "alti-staging-$svc" \
+          --image "$REGISTRY/alti-$svc:$SHORT_SHA" \
+          --region "${_REGION}" \
+          --tag "canary-$SHORT_SHA" \
+          --no-traffic && \
+        gcloud run services update-traffic "alti-staging-$svc" \
+          --region "${_REGION}" \
+          --to-tags "canary-$SHORT_SHA=5" || exit 1
+      done
+  waitFor: ['build-push']
+
+# ── Stage 6: Load Test Canary ─────────────────────────────────────────────────
+- name: 'grafana/k6'
+  id: 'load-test'
+  entrypoint: 'k6'
+  args:
+    - 'run'
+    - '--env'
+    - 'CANARY_TAG=$SHORT_SHA'
+    - '--env'
+    - 'PROJECT_ID=$PROJECT_ID'
+    - '--env'
+    - 'REGION=${_REGION}'
+    - 'infra/cloudbuild/k6_load_test.js'
+  waitFor: ['deploy-canary']
+
+# ── Stage 7: Promote or Rollback ─────────────────────────────────────────────
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: 'promote-or-rollback'
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      # Check if k6 wrote a failure flag
+      if [ -f /workspace/slo_breach.flag ]; then
+        echo "⚠️  SLO breach detected — rolling back canary" && \
+        for svc in $(cat /workspace/changed_services.txt); do
+          gcloud run services update-traffic "alti-staging-$svc" \
+            --region "${_REGION}" \
+            --to-revisions "LATEST=100" && \
+          echo "✅ Rolled back: $svc"
+        done && exit 1
+      else
+        echo "✅ SLOs met — promoting canary to 100% traffic" && \
+        for svc in $(cat /workspace/changed_services.txt); do
+          gcloud run services update-traffic "alti-staging-$svc" \
+            --region "${_REGION}" \
+            --to-tags "canary-$SHORT_SHA=100" && \
+          echo "✅ Promoted: $svc"
+        done
+      fi
+  waitFor: ['load-test']
+
+# ── Artifacts: test reports + build summary ───────────────────────────────────
+artifacts:
+  objects:
+    location: 'gs://alti-ci-artifacts-$PROJECT_ID/builds/$BUILD_ID/'
+    paths:
+      - 'coverage.xml'
+      - 'k6_results.json'
+      - 'build_summary.txt'
+
+substitutions:
+  _REGION: 'us-central1'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+  dynamic_substitutions: true
+
+timeout: '1800s'   # 30-minute pipeline timeout
