@@ -1,101 +1,77 @@
+# infra/terraform/variables.tf
+
 variable "project_id" {
-  description = "The GCP Project ID"
+  description = "GCP project ID for the Alti.Analytics deployment"
   type        = string
 }
 
-variable "gcp_organization_id" {
-  description = "The GCP Organization ID (Required for Security Command Center)"
-  type        = string
-  default     = "123456789012" # Mock org ID
-}
-
-variable "gcp_region" {
+variable "primary_region" {
   description = "Primary GCP region"
   type        = string
   default     = "us-central1"
 }
 
-variable "aws_region" {
-  description = "Primary AWS region for EKS expansion"
+variable "secondary_region" {
+  description = "Secondary GCP region for DR and multi-region HA"
   type        = string
-  default     = "us-east-1"
-}
-
-variable "cockroach_operator_password" {
-  description = "Password for the LangGraph Swarm to access CockroachDB"
-  type        = string
-  sensitive   = true
-  default     = "MOCK_COCKROACH_PASSWORD"
-}
-
-variable "azure_region" {
-  description = "Primary Azure region for AKS expansion"
-  type        = string
-  default     = "East US"
+  default     = "europe-west1"
 }
 
 variable "environment" {
-  description = "Deployment environment (e.g., dev, staging, prod)"
+  description = "Deployment environment: prod | staging | dev"
   type        = string
-  default     = "dev"
+  validation {
+    condition     = contains(["prod", "staging", "dev"], var.environment)
+    error_message = "environment must be prod, staging, or dev."
+  }
 }
 
-variable "vpc_cidr" {
-  description = "CIDR block for the GCP VPC"
+variable "tenant_id" {
+  description = "Primary tenant identifier"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "alti-platform"
 }
 
-# Cross-Cloud Import Variables (for BigQuery DTS)
-variable "aws_access_key_id" {
-  description = "AWS IAM Access Key with read permissions to the partner S3 bucket"
-  type        = string
-  sensitive   = true
-  default     = "MOCK_AWS_ACCESS_KEY"
+variable "spanner_processing_units" {
+  description = "Cloud Spanner processing units (1000 = 1 node)"
+  type        = number
+  default     = 1000
 }
 
-variable "aws_secret_access_key" {
-  description = "AWS IAM Secret Key with read permissions to the partner S3 bucket"
-  type        = string
-  sensitive   = true
-  default     = "MOCK_AWS_SECRET_KEY"
+variable "alloydb_cpu_count" {
+  description = "vCPUs for AlloyDB primary instance"
+  type        = number
+  default     = 8
 }
 
-# --- IAP Identity Variables ---
-variable "iap_oauth2_client_id" {
-  description = "OAuth2 Client ID for Identity-Aware Proxy (BeyondCorp)"
-  type        = string
-  default     = "MOCK_IAP_CLIENT_ID"
+variable "cloud_run_min_instances" {
+  type    = number
+  default = 1
 }
 
-variable "iap_oauth2_client_secret" {
-  description = "OAuth2 Client Secret for Identity-Aware Proxy (BeyondCorp)"
-  type        = string
-  sensitive   = true
-  default     = "MOCK_IAP_CLIENT_SECRET"
+variable "cloud_run_max_instances" {
+  type    = number
+  default = 100
 }
 
-# --- Multi-Cloud Load Balancer Variables ---
-variable "gcp_lb_ip" {
-  description = "Public IP of the GCP HTTP(S) Load Balancer"
-  type        = string
-  default     = "34.120.0.1" # Mock IP
+variable "bigquery_location" {
+  type    = string
+  default = "US"
 }
 
-variable "aws_alb_dns_name" {
-  description = "DNS Name of the AWS Application Load Balancer"
-  type        = string
-  default     = "internal-alti-aws-alb-12345.us-east-1.elb.amazonaws.com"
+variable "enable_vpc_service_controls" {
+  description = "Enable VPC Service Controls data perimeter"
+  type        = bool
+  default     = true
 }
 
-variable "aws_alb_zone_id" {
-  description = "Hosted Zone ID for the AWS ALB"
-  type        = string
-  default     = "Z123456789"
+variable "enable_cmek" {
+  description = "Enable Customer-Managed Encryption Keys"
+  type        = bool
+  default     = true
 }
 
-variable "azure_app_gateway_ip" {
-  description = "Public IP of the Azure Application Gateway"
+variable "alert_email" {
+  description = "Email for monitoring alerts and breach notifications"
   type        = string
-  default     = "52.170.0.1" # Mock IP
 }
